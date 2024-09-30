@@ -151,37 +151,6 @@ jobs:
           framework: ${{ matrix.framework }}
           restoreCacheKey: ${{ needs.prepare_linux.outputs.restoreCacheKey }}
 
-      - id: test-projects
-        name: Generate matrix for test projects
-        uses: codebeltnet/shell-globbing@v1
-        with:
-          pattern: test/**/*.csproj
-
-  pack:
-    name: 📦 Pack
-    runs-on: ubuntu-22.04
-    timeout-minutes: 15
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-    needs: [prepare_linux, build]
-    steps:
-      - name: Checkout
-        uses: codebeltnet/git-checkout@v1
-
-      - name: Install .NET
-        uses: codebeltnet/install-dotnet@v1
-        with:
-          includePreview: true
-
-      - name: Pack for ${{ matrix.configuration }}
-        uses: codebeltnet/dotnet-pack@v2
-        with:
-          configuration: ${{ matrix.configuration }}
-          uploadPackedArtifact: true
-          version: ${{ needs.build.outputs.version }}
-          restoreCacheKey: ${{ needs.prepare_linux.outputs.restoreCacheKey }}
-
   test:
     name: 🧪 Test
     needs: [build, prepare_linux, prepare_windows]
@@ -190,7 +159,6 @@ jobs:
       matrix:
         os: [ubuntu-22.04, windows-2022]
         configuration: [Debug, Release]
-        project: ${{ fromJson(needs.build.outputs.testProjects) }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
@@ -205,136 +173,12 @@ jobs:
       - name: Install .NET Tool - Report Generator
         uses: codebeltnet/dotnet-tool-install-reportgenerator@v1
 
-      - name: Spin up SQL Server test dependency for ${{ matrix.configuration }} build
-        if: ${{ (runner.os == 'Linux' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        uses: codebeltnet/docker-compose@v1
-        with:
-          command: up
-          options: --wait
-        env:
-          SA_PASSWORD: ${{ secrets.SA_PASSWORD }}
-
-      - name: Sleep for 60 seconds
-        if: ${{ (runner.os == 'Linux' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        run: sleep 60s
-        shell: bash
-
       - name: Test with ${{ matrix.configuration }} build
         if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        uses: codebeltnet/dotnet-test@v3
+        uses: codebeltnet/dotnet-test@v3.1.0
         with:
-          projects: ${{ matrix.project }}
+          projects: "test/**/Cuemon.AspNetCore.Mvc.FunctionalTests.csproj test/**/Cuemon.AspNetCore.Mvc.Tests.csproj"
           configuration: ${{ matrix.configuration }}
           restoreCacheKey: ${{ runner.os == 'Linux' && needs.prepare_linux.outputs.restoreCacheKey || needs.prepare_windows.outputs.restoreCacheKey }}
-          buildSwitches: -p:SkipSignAssembly=true
-          level: normal
-        env:
-          CONNECTIONSTRINGS__ADVENTUREWORKS: ${{ secrets.DB_ADVENTUREWORKS }}
-
-      - name: Take down SQL Server test dependency for ${{ matrix.configuration }} build
-        if: ${{ (runner.os == 'Linux' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        uses: codebeltnet/docker-compose@v1
-        with:
-          command: down
-
-  sonarcloud:
-    name: 🔬 Code Quality Analysis
-    needs: [prepare_linux, build, test]
-    runs-on: ubuntu-22.04
-    timeout-minutes: 25
-    steps:
-      - name: Checkout
-        uses: codebeltnet/git-checkout@v1
-
-      - name: Install .NET
-        uses: codebeltnet/install-dotnet@v1
-        with:
-          includePreview: true
-
-      - name: Install .NET Tool - Sonar Scanner
-        uses: codebeltnet/dotnet-tool-install-sonarscanner@v1
-
-      - name: Restore Dependencies
-        uses: codebeltnet/dotnet-restore@v2
-        with:
-          useRestoreCache: true
-          restoreCacheKey: ${{ needs.prepare_linux.outputs.restoreCacheKey }}
-
-      - name: Run SonarCloud Analysis
-        uses: codebeltnet/sonarcloud-scan@v1
-        with:
-          token: ${{ secrets.SONAR_TOKEN }}
-          organization: geekle
-          projectKey: Cuemon
-          version: ${{ needs.build.outputs.version }}
-
-      - name: Build
-        uses: codebeltnet/dotnet-build@v2
-        with:
-          buildSwitches: -p:SkipSignAssembly=true
-          uploadBuildArtifact: false
-
-      - name: Finalize SonarCloud Analysis
-        uses: codebeltnet/sonarcloud-scan-finalize@v1
-        with:
-          token: ${{ secrets.SONAR_TOKEN }}
-
-  codecov:
-    name: 📊 Code Coverage Analysis
-    needs: [build, test]
-    runs-on: ubuntu-22.04
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: codebeltnet/git-checkout@v1
-
-      - name: Run CodeCov Analysis
-        uses: codebeltnet/codecov-scan@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          repository: gimlichael/Cuemon
-
-  codeql:
-    name: 🛡️ Security Analysis
-    needs: [prepare_linux, build, test]
-    runs-on: ubuntu-22.04
-    timeout-minutes: 15
-    steps:
-      - name: Checkout
-        uses: codebeltnet/git-checkout@v1
-
-      - name: Install .NET
-        uses: codebeltnet/install-dotnet@v1
-        with:
-          includePreview: true
-
-      - name: Restore Dependencies
-        uses: codebeltnet/dotnet-restore@v2
-        with:
-          useRestoreCache: true
-          restoreCacheKey: ${{ needs.prepare_linux.outputs.restoreCacheKey }}
-
-      - name: Prepare CodeQL SAST Analysis
-        uses: codebeltnet/codeql-scan@v1
-
-      - name: Build
-        uses: codebeltnet/dotnet-build@v2
-        with:
-          buildSwitches: -p:SkipSignAssembly=true
-          uploadBuildArtifact: false
-
-      - name: Finalize CodeQL SAST Analysis
-        uses: codebeltnet/codeql-scan-finalize@v1
-
-  deploy:
-    if: github.event_name != 'pull_request'
-    name: 🚀 Deploy v${{ needs.build.outputs.version }}
-    runs-on: ubuntu-22.04
-    timeout-minutes: 15
-    needs: [build, pack, test, sonarcloud, codecov, codeql]
-    environment: Production
-    steps:
-      - uses: codebeltnet/nuget-push@v1
-        with:
-          token: ${{ secrets.NUGET_TOKEN }}
-          configuration: ${{ inputs.configuration == '' && 'Release' || inputs.configuration }}
+          level: detailed
+          buildSwitches: -bl
