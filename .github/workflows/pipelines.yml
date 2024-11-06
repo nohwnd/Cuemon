@@ -176,7 +176,7 @@ jobs:
           level: detailed
           buildSwitches: --diag:${{ runner.temp }}/logs/diag.log
       - name: Upload ${{ matrix.configuration }} logs
-        if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
+        if: ${{ always() }}
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
