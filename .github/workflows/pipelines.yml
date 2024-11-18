@@ -170,7 +170,7 @@ jobs:
         run: dotnet tool install --global dotnet-trace
       
       - name: Make dir
-        run: mkcd ${{ runner.temp }}/logs/diag1.log
+        run: mkdir ${{ runner.temp }}/logs/diag1.log
        
       - name: Test with ${{ matrix.configuration }} build 1
         if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
