@@ -174,11 +174,11 @@ jobs:
        
       - name: Test with ${{ matrix.configuration }} build 1
         if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        run: dotnet trace collect --output ${{ runner.temp }}/logs/trace1.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.FunctionalTests/Cuemon.AspNetCore.Mvc.FunctionalTests.csproj --diag:${{ runner.temp }}/logs/diag1.log
+        run: dotnet trace collect --duration 00:00:04:00 --output ${{ runner.temp }}/logs/trace1.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.FunctionalTests/Cuemon.AspNetCore.Mvc.FunctionalTests.csproj --diag:${{ runner.temp }}/logs/diag1.log
       
       - name: Test with ${{ matrix.configuration }} build 2
         if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        run: dotnet trace collect --output ${{ runner.temp }}/logs/trace2.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.Tests/Cuemon.AspNetCore.Mvc.Tests.csproj --diag:${{ runner.temp }}/logs/diag2.log
+        run: dotnet trace collect --duration 00:00:04:00 --output ${{ runner.temp }}/logs/trace2.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.Tests/Cuemon.AspNetCore.Mvc.Tests.csproj --diag:${{ runner.temp }}/logs/diag2.log
 
       # - name: Test with ${{ matrix.configuration }} build
       #   if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
