@@ -154,6 +154,8 @@ jobs:
         configuration: [Debug, Release]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
+    env:
+      VSTEST_DISABLE_STANDARD_OUTPUT_CAPTURING: 1
     steps:
       - name: Checkout
         uses: codebeltnet/git-checkout@v1
@@ -169,26 +171,26 @@ jobs:
       - name: install .NET Tool - trace
         run: dotnet tool install --global dotnet-trace
       
-      - name: Make dir
-        run: mkdir ${{ runner.temp }}/logs
+      # - name: Make dir
+      #   run: mkdir ${{ runner.temp }}/logs
        
-      - name: Test with ${{ matrix.configuration }} build 1
-        if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        run: dotnet trace collect --duration 00:00:04:00 --output ${{ runner.temp }}/logs/trace1.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.FunctionalTests/Cuemon.AspNetCore.Mvc.FunctionalTests.csproj --diag:${{ runner.temp }}/logs/diag1.log
-      
-      - name: Test with ${{ matrix.configuration }} build 2
-        if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-        run: dotnet trace collect --duration 00:00:04:00 --output ${{ runner.temp }}/logs/trace2.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.Tests/Cuemon.AspNetCore.Mvc.Tests.csproj --diag:${{ runner.temp }}/logs/diag2.log
-
-      # - name: Test with ${{ matrix.configuration }} build
+      # - name: Test with ${{ matrix.configuration }} build 1
       #   if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
-      #   uses: codebeltnet/dotnet-test@v3.1.0
-      #   with:
-      #     projects: "test/**/Cuemon.AspNetCore.Mvc.FunctionalTests.csproj test/**/Cuemon.AspNetCore.Mvc.Tests.csproj"
-      #     configuration: ${{ matrix.configuration }}
-      #     restoreCacheKey: ${{ runner.os == 'Linux' && needs.prepare_linux.outputs.restoreCacheKey || needs.prepare_windows.outputs.restoreCacheKey }}
-      #     level: detailed
-      #     buildSwitches: --diag:${{ runner.temp }}/logs/diag.log
+      #   run: dotnet trace collect --duration 00:00:04:00 --output ${{ runner.temp }}/logs/trace1.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.FunctionalTests/Cuemon.AspNetCore.Mvc.FunctionalTests.csproj --diag:${{ runner.temp }}/logs/diag1.log
+      
+      # - name: Test with ${{ matrix.configuration }} build 2
+      #   if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
+      #   run: dotnet trace collect --duration 00:00:04:00 --output ${{ runner.temp }}/logs/trace2.nettrace -- dotnet test test/Cuemon.AspNetCore.Mvc.Tests/Cuemon.AspNetCore.Mvc.Tests.csproj --diag:${{ runner.temp }}/logs/diag2.log
+
+      - name: Test with ${{ matrix.configuration }} build
+        if: ${{ !(runner.os == 'Windows' && contains(matrix.project, 'Cuemon.Data.SqlClient.Tests')) }}
+        uses: codebeltnet/dotnet-test@v3.1.0
+        with:
+          projects: "test/**/Cuemon.AspNetCore.Mvc.FunctionalTests.csproj test/**/Cuemon.AspNetCore.Mvc.Tests.csproj"
+          configuration: ${{ matrix.configuration }}
+          restoreCacheKey: ${{ runner.os == 'Linux' && needs.prepare_linux.outputs.restoreCacheKey || needs.prepare_windows.outputs.restoreCacheKey }}
+          level: detailed
+          buildSwitches: --diag:${{ runner.temp }}/logs/diag.log
 
       - name: Upload ${{ matrix.configuration }} logs
         if: ${{ always() }}
