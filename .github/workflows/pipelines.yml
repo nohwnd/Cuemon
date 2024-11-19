@@ -154,8 +154,8 @@ jobs:
         configuration: [Debug, Release]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
-    env:
-      VSTEST_DISABLE_STANDARD_OUTPUT_FORWARDING: 0
+    # env:
+    #   VSTEST_DISABLE_STANDARD_OUTPUT_FORWARDING: 0
     steps:
       - name: Checkout
         uses: codebeltnet/git-checkout@v1
@@ -168,8 +168,8 @@ jobs:
       - name: Install .NET Tool - Report Generator
         uses: codebeltnet/dotnet-tool-install-reportgenerator@v1
       
-      - name: install .NET Tool - trace
-        run: dotnet tool install --global dotnet-trace
+      # - name: install .NET Tool - trace
+      #   run: dotnet tool install --global dotnet-trace
       
       # - name: Make dir
       #   run: mkdir ${{ runner.temp }}/logs
