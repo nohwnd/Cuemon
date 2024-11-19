@@ -155,7 +155,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     env:
-      VSTEST_DISABLE_STANDARD_OUTPUT_FORWARDING: 1
+      VSTEST_DISABLE_STANDARD_OUTPUT_FORWARDING: 0
     steps:
       - name: Checkout
         uses: codebeltnet/git-checkout@v1
